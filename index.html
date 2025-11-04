@@ -1,489 +1,953 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Signage Management</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#f5f5f5;padding:20px;min-height:100vh}
-.container{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);max-width:500px;margin:0 auto 20px}
-h1{font-size:22px;margin-bottom:20px;color:#333}
-h2{font-size:20px;margin-bottom:16px;color:#333;text-align:center}
-.role-select{display:flex;gap:12px;margin-bottom:20px}
-.role-btn{flex:1;padding:16px;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:16px;font-weight:600;transition:.3s}
-.role-btn.active{border-color:#4CAF50;background:#f0f8f0;color:#4CAF50}
-.upload-area{border:2px dashed #ccc;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:.3s;margin-bottom:20px}
-.upload-area:hover{border-color:#666;background:#fafafa}
-input[type="file"]{display:none}
-.preview{max-width:100%;border-radius:8px;margin-bottom:20px;display:none}
-select,button,input[type="text"],input[type="number"]{width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:16px;margin-bottom:12px}
-button{background:#4CAF50;color:#fff;border:none;cursor:pointer;font-weight:600;transition:.3s}
-button:hover{background:#45a049}
-button:disabled{background:#ccc;cursor:not-allowed}
-.success{background:#4CAF50;color:#fff;padding:16px;border-radius:8px;text-align:center;margin-top:12px;font-weight:600}
-.error{background:#f44336;color:#fff;padding:16px;border-radius:8px;text-align:center;margin-top:12px}
-.step{display:none}
-.step.active{display:block}
-.filters{background:#f9f9f9;padding:16px;border-radius:8px;margin-bottom:20px}
-.signage-card{background:#fff;border:2px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:.3s}
-.signage-card:hover{border-color:#4CAF50;box-shadow:0 2px 8px rgba(76,175,80,.2)}
-.signage-card.selected{border-color:#4CAF50;background:#f0f8f0}
-.signage-code{font-size:20px;font-weight:700;color:#333;margin-bottom:8px}
-.signage-specs{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;color:#666}
-.signage-status{display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;margin-top:8px}
-.signage-status.pending{background:#FFF3CD;color:#856404}
-.signage-status.submitted{background:#D1ECF1;color:#0C5460}
-.signage-status.completed{background:#D4EDDA;color:#155724}
-.gallery{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.gallery-item{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-.gallery-item img{width:100%;height:250px;object-fit:cover;cursor:pointer}
-.gallery-item img[data-src]{background:#f0f0f0}
-.gallery-item-info{padding:16px}
-.gallery-item-code{font-weight:700;font-size:18px;color:#333;margin-bottom:8px}
-.gallery-item-specs{font-size:13px;color:#666;margin-bottom:8px}
-.status{display:inline-block;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:12px}
-.status.pending{background:#FFF3CD;color:#856404}
-.status.approved{background:#D4EDDA;color:#155724}
-.status.rejected{background:#F8D7DA;color:#721C24}
-.action-btns{display:flex;gap:8px;margin-top:12px}
-.action-btns button{margin-bottom:0;padding:10px;font-size:14px}
-.approve-btn{background:#4CAF50}
-.reject-btn{background:#f44336}
-.reject-btn:hover{background:#d32f2f}
-.back-btn{background:#666;margin-top:12px}
-.back-btn:hover{background:#555}
-.comment-input{margin-top:8px;display:none}
-.view-tabs{display:flex;gap:8px;margin-bottom:16px;max-width:1200px;margin:0 auto 16px}
-.view-tab{flex:1;padding:12px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;text-align:center;font-weight:600}
-.view-tab.active{background:#4CAF50;color:#fff;border-color:#4CAF50}
-.empty{text-align:center;color:#999;padding:40px;background:#fff;border-radius:12px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:20px}
-.modal.active{display:flex}
-.modal-content{background:#fff;border-radius:12px;max-width:90vw;max-height:90vh;overflow:auto;position:relative}
-.modal-image{width:100%;height:auto;display:block}
-.modal-close{position:absolute;top:20px;right:20px;background:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);z-index:10}
-.api-status{background:#E3F2FD;border-left:4px solid #2196F3;padding:12px;margin-bottom:16px;font-size:14px;border-radius:4px}
-.drive-link{display:inline-block;margin-top:8px;padding:6px 12px;background:#4285F4;color:#fff;text-decoration:none;border-radius:4px;font-size:12px}
-.drive-link:hover{background:#357AE8}
-</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 10.7px 0.0px; font: 16.0px Helvetica; -webkit-text-stroke: #000000}
+    span.s1 {font-kerning: none}
+    span.s2 {font: 16.0px 'Apple Color Emoji'; font-kerning: none}
+  </style>
 </head>
 <body>
-<div class="container">
-<h1>🏭 Signage Management</h1>
-
-<div class="api-status" id="apiStatus">🔄 Connecting to Google Sheets...</div>
-
-<div class="role-select">
-<button class="role-btn active" onclick="setRole('worker')">👷 Factory Worker</button>
-<button class="role-btn" onclick="setRole('supervisor')">👔 Supervisor</button>
-</div>
-
-<div id="workerView">
-<div id="workerStep1" class="step active">
-<h2>Select Signage</h2>
-<div class="filters">
-<select id="filterWidth" onchange="applyFilters()">
-<option value="">All Widths</option>
-<option value="small">&lt; 2m</option>
-<option value="medium">2m - 4m</option>
-<option value="large">&gt; 4m</option>
-</select>
-<select id="filterHeight" onchange="applyFilters()">
-<option value="">All Heights</option>
-<option value="small">&lt; 1m</option>
-<option value="medium">1m - 2m</option>
-<option value="large">&gt; 2m</option>
-</select>
-<select id="filterIllumination" onchange="applyFilters()">
-<option value="">All Types</option>
-<option value="Yes">Illuminated</option>
-<option value="No">Non-Illuminated</option>
-</select>
-</div>
-<div id="signageList"></div>
-</div>
-
-<div id="workerStep2" class="step">
-<h2>Upload Photo</h2>
-<div id="selectedSignageInfo"></div>
-<div class="upload-area" onclick="document.getElementById('fileInput').click()">
-<p>📷 Tap to capture photo</p>
-<input type="file" id="fileInput" accept="image/*" capture="environment">
-</div>
-<img id="preview" class="preview">
-<button id="submitBtn" style="display:none" onclick="submitUpload()">Submit Photo</button>
-<button class="back-btn" onclick="backToList()">← Back to List</button>
-</div>
-</div>
-
-<div id="supervisorView" style="display:none">
-<div id="supervisorStep1" class="step active">
-<h2>Add New Signage</h2>
-<input type="text" id="newCode" placeholder="Signage Code (e.g., CCB-004)">
-<div class="form-row">
-<input type="number" id="newWidth" placeholder="Width (m)" step="0.1">
-<input type="number" id="newHeight" placeholder="Height (m)" step="0.1">
-</div>
-<select id="newIllumination">
-<option value="">Illumination?</option>
-<option value="Yes">Yes</option>
-<option value="No">No</option>
-</select>
-<button onclick="addSignage()">Add Signage</button>
-<div id="supervisorMessage"></div>
-</div>
-</div>
-</div>
-
-<div style="max-width:1200px;margin:20px auto">
-<h2 id="galleryTitle">📋 Review Uploads</h2>
-<div class="view-tabs" id="viewTabs" style="display:none">
-<button class="view-tab active" onclick="setView('pending')">Pending</button>
-<button class="view-tab" onclick="setView('approved')">Approved</button>
-<button class="view-tab" onclick="setView('rejected')">Rejected</button>
-<button class="view-tab" onclick="setView('all')">All</button>
-</div>
-<div id="gallery" class="gallery"></div>
-<div id="emptyGallery" class="empty" style="display:none">No uploads yet</div>
-</div>
-
-<div id="imageModal" class="modal" onclick="closeModal()">
-<button class="modal-close" onclick="closeModal()">×</button>
-<div class="modal-content" onclick="event.stopPropagation()">
-<img id="modalImage" class="modal-image">
-</div>
-</div>
-
-<script>
-const API_URL='https://script.google.com/macros/s/AKfycbylzTLaiVd1iXdI4rYhripLQz3mlMlUXgt68hhVh4PO5OQdpvT7mREC2Wd_Up07Lgfe-A/exec';
-let currentRole='worker';
-let currentView='pending';
-let allSignage=[];
-let allUploads=[];
-let selectedSignage=null;
-let selectedImage=null;
-let signageByCode={};
-
-const urlCache=new Map();
-function convertDriveUrl(url){
-if(!url)return'';
-if(urlCache.has(url))return urlCache.get(url);
-const match=url.match(/\/d\/([^\/]+)/);
-const result=match?`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`:url;
-urlCache.set(url,result);
-return result;
-}
-
-async function loadData(){
-const statusEl=document.getElementById('apiStatus');
-try{
-statusEl.innerHTML='🔄 Loading signage data...';
-statusEl.style.background='#E3F2FD';
-statusEl.style.borderColor='#2196F3';
-
-const signageRes=await fetch(API_URL+'?action=getSignage&t='+Date.now(),{
-method:'GET',
-redirect:'follow'
-});
-
-if(!signageRes.ok)throw new Error('Failed to fetch signage');
-
-const signageData=await signageRes.json();
-allSignage=signageData.data||[];
-signageByCode=Object.fromEntries(allSignage.map(s=>[s.code,s]));
-
-statusEl.innerHTML='🔄 Loading uploads...';
-const uploadsRes=await fetch(API_URL+'?action=getUploads&t='+Date.now(),{
-method:'GET',
-redirect:'follow'
-});
-
-if(!uploadsRes.ok)throw new Error('Failed to fetch uploads');
-
-const uploadsData=await uploadsRes.json();
-allUploads=uploadsData.data||[];
-
-statusEl.innerHTML='✅ Connected ('+allSignage.length+' signage, '+allUploads.length+' uploads)';
-statusEl.style.background='#D4EDDA';
-statusEl.style.borderColor='#155724';
-
-applyFilters();
-loadGallery();
-}catch(err){
-console.error('Load error:',err);
-statusEl.innerHTML='❌ Error: '+err.message;
-statusEl.style.background='#F8D7DA';
-statusEl.style.borderColor='#721C24';
-document.getElementById('signageList').innerHTML='<div class="error">Connection error. Please refresh.</div>';
-}
-}
-
-function setRole(role){
-currentRole=role;
-document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));
-event.target.classList.add('active');
-document.getElementById('workerView').style.display=role==='worker'?'block':'none';
-document.getElementById('supervisorView').style.display=role==='supervisor'?'block':'none';
-document.getElementById('viewTabs').style.display=role==='supervisor'?'flex':'none';
-document.getElementById('galleryTitle').textContent=role==='worker'?'📋 My Submissions':'📋 Review Uploads';
-if(role==='supervisor')setView('pending');
-else loadGallery();
-}
-
-let filterTimeout;
-function applyFilters(){
-clearTimeout(filterTimeout);
-filterTimeout=setTimeout(()=>{
-const width=document.getElementById('filterWidth').value;
-const height=document.getElementById('filterHeight').value;
-const illum=document.getElementById('filterIllumination').value;
-let filtered=allSignage.filter(s=>{
-let match=true;
-if(width==='small'&&parseFloat(s.width)>=2)match=false;
-if(width==='medium'&&(parseFloat(s.width)<2||parseFloat(s.width)>4))match=false;
-if(width==='large'&&parseFloat(s.width)<=4)match=false;
-if(height==='small'&&parseFloat(s.height)>=1)match=false;
-if(height==='medium'&&(parseFloat(s.height)<1||parseFloat(s.height)>2))match=false;
-if(height==='large'&&parseFloat(s.height)<=2)match=false;
-if(illum&&s.illumination!==illum)match=false;
-return match;
-});
-displaySignageList(filtered);
-},150);
-}
-
-function displaySignageList(list){
-const container=document.getElementById('signageList');
-if(list.length===0){
-container.innerHTML='<div class="empty">No signage found</div>';
-return;
-}
-container.innerHTML=list.map(s=>`
-<div class="signage-card" onclick="selectSignage('${s.code}')">
-<div class="signage-code">${s.code}</div>
-<div class="signage-specs">
-<div>📏 ${s.width}m × ${s.height}m</div>
-<div>💡 ${s.illumination==='Yes'?'Illuminated':'Standard'}</div>
-</div>
-<span class="signage-status ${s.status.toLowerCase()}">${s.status}</span>
-</div>
-`).join('');
-}
-
-function selectSignage(code){
-selectedSignage=signageByCode[code];
-document.getElementById('selectedSignageInfo').innerHTML=`
-<div class="signage-card selected">
-<div class="signage-code">${selectedSignage.code}</div>
-<div class="signage-specs">
-<div>📏 ${selectedSignage.width}m × ${selectedSignage.height}m</div>
-<div>💡 ${selectedSignage.illumination==='Yes'?'Illuminated':'Standard'}</div>
-</div>
-</div>
-`;
-document.getElementById('workerStep1').classList.remove('active');
-document.getElementById('workerStep2').classList.add('active');
-}
-
-function backToList(){
-document.getElementById('workerStep2').classList.remove('active');
-document.getElementById('workerStep1').classList.add('active');
-document.getElementById('preview').style.display='none';
-document.getElementById('submitBtn').style.display='none';
-selectedSignage=null;
-selectedImage=null;
-}
-
-document.getElementById('fileInput').onchange=function(e){
-const file=e.target.files[0];
-if(!file)return;
-const reader=new FileReader();
-reader.onload=function(e){
-selectedImage=e.target.result;
-document.getElementById('preview').src=selectedImage;
-document.getElementById('preview').style.display='block';
-document.getElementById('submitBtn').style.display='block';
-};
-reader.readAsDataURL(file);
-};
-
-async function submitUpload(){
-if(!selectedSignage||!selectedImage)return;
-const btn=document.getElementById('submitBtn');
-btn.disabled=true;
-btn.textContent='Uploading to Drive...';
-try{
-await fetch(API_URL,{
-method:'POST',
-mode:'no-cors',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({
-action:'uploadImage',
-code:selectedSignage.code,
-imageData:selectedImage,
-worker:'Worker'
-})
-});
-alert('✅ Photo uploaded!\nFilename: '+selectedSignage.code+'.jpg');
-backToList();
-setTimeout(loadData,2000);
-}catch(err){
-alert('❌ Upload failed: '+err.message);
-}finally{
-btn.disabled=false;
-btn.textContent='Submit Photo';
-}
-}
-
-async function addSignage(){
-const code=document.getElementById('newCode').value.trim();
-const width=document.getElementById('newWidth').value;
-const height=document.getElementById('newHeight').value;
-const illum=document.getElementById('newIllumination').value;
-if(!code||!width||!height||!illum){
-alert('Please fill all fields');
-return;
-}
-try{
-await fetch(API_URL,{
-method:'POST',
-mode:'no-cors',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({
-action:'addSignage',
-code,width,height,illumination:illum
-})
-});
-document.getElementById('supervisorMessage').innerHTML='<div class="success">✅ Signage added!</div>';
-document.getElementById('newCode').value='';
-document.getElementById('newWidth').value='';
-document.getElementById('newHeight').value='';
-document.getElementById('newIllumination').value='';
-setTimeout(()=>document.getElementById('supervisorMessage').innerHTML='',3000);
-setTimeout(loadData,2000);
-}catch(err){
-alert('Error adding signage');
-}
-}
-
-function setView(view){
-currentView=view;
-document.querySelectorAll('.view-tab').forEach(b=>b.classList.remove('active'));
-event.target.classList.add('active');
-loadGallery();
-}
-
-function loadGallery(){
-const container=document.getElementById('gallery');
-const empty=document.getElementById('emptyGallery');
-let filtered=currentView==='all'?allUploads:allUploads.filter(u=>u.status===currentView);
-if(filtered.length===0){
-container.innerHTML='';
-empty.style.display='block';
-return;
-}
-empty.style.display='none';
-const fragment=document.createDocumentFragment();
-filtered.forEach((u,i)=>{
-const signage=signageByCode[u.code]||{};
-const thumbUrl=convertDriveUrl(u.imageUrl);
-const div=document.createElement('div');
-div.className='gallery-item';
-div.innerHTML=`<img data-src="${thumbUrl}" onclick="window.open('${u.imageUrl}','_blank')">
-<div class="gallery-item-info">
-<div class="gallery-item-code">${u.code}</div>
-<div class="gallery-item-specs">📏 ${signage.width||'?'}m × ${signage.height||'?'}m | 💡 ${signage.illumination||'?'}</div>
-<div class="gallery-item-specs">📅 ${new Date(u.uploadDate).toLocaleDateString()}</div>
-<span class="status ${u.status}">${u.status.toUpperCase()}</span>
-<a href="${u.imageUrl}" target="_blank" class="drive-link">📂 Open in Drive</a>
-${currentRole==='supervisor'&&u.status==='pending'?`
-<div class="action-btns">
-<button class="approve-btn" onclick="updateStatus('${u.code}','approved','${i}')">✓ Approve</button>
-<button class="reject-btn" onclick="toggleRejectInput(${i})">✗ Reject</button>
-</div>
-<input type="text" id="comment${i}" class="comment-input" placeholder="Rejection reason...">
-<button id="rejectConfirm${i}" style="display:none;background:#f44336;margin-top:8px" onclick="updateStatus('${u.code}','rejected','${i}')">Confirm Reject</button>
-`:''}
-${u.reviewComment?`<div style="margin-top:8px;font-size:12px;color:#721C24;background:#F8D7DA;padding:8px;border-radius:4px">💬 ${u.reviewComment}</div>`:''}
-</div>`;
-fragment.appendChild(div);
-});
-container.innerHTML='';
-container.appendChild(fragment);
-observeImages();
-}
-
-function toggleRejectInput(idx){
-const input=document.getElementById('comment'+idx);
-const btn=document.getElementById('rejectConfirm'+idx);
-input.style.display='block';
-btn.style.display='block';
-input.focus();
-}
-
-async function updateStatus(code,status,idx){
-let comment='';
-if(status==='rejected'){
-comment=document.getElementById('comment'+idx).value.trim();
-if(!comment){
-alert('Please enter rejection reason');
-return;
-}
-}
-try{
-await fetch(API_URL,{
-method:'POST',
-mode:'no-cors',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({
-action:'updateStatus',
-code,status,comment,
-reviewedBy:'Supervisor'
-})
-});
-alert('✅ Status updated!');
-setTimeout(loadData,2000);
-}catch(err){
-alert('Error updating status');
-}
-}
-
-function openModal(src){
-window.open(src,'_blank');
-}
-
-function closeModal(){
-document.getElementById('imageModal').classList.remove('active');
-}
-
-window.selectSignage=selectSignage;
-window.setRole=setRole;
-window.setView=setView;
-window.applyFilters=applyFilters;
-window.submitUpload=submitUpload;
-window.addSignage=addSignage;
-window.updateStatus=updateStatus;
-window.toggleRejectInput=toggleRejectInput;
-window.backToList=backToList;
-
-const imgObserver=new IntersectionObserver((entries)=>{
-entries.forEach(e=>{
-if(e.isIntersecting){
-const img=e.target;
-img.src=img.dataset.src;
-img.removeAttribute('data-src');
-imgObserver.unobserve(img);
-}
-});
-},{rootMargin:'50px'});
-
-function observeImages(){
-document.querySelectorAll('img[data-src]').forEach(img=>imgObserver.observe(img));
-}
-
-loadData();
-</script>
+<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
+<p class="p1"><span class="s1">&lt;html lang="en"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;head&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;meta charset="UTF-8"&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;title&gt;Signage Management&lt;/title&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link rel="preconnect" href="https://script.google.com"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link rel="preconnect" href="https://drive.google.com"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link rel="dns-prefetch" href="https://lh3.googleusercontent.com"&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;style&gt;</span></p>
+<p class="p1"><span class="s1">    * {</span></p>
+<p class="p1"><span class="s1">        margin: 0;</span></p>
+<p class="p1"><span class="s1">        padding: 0;</span></p>
+<p class="p1"><span class="s1">        box-sizing: border-box</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    body {</span></p>
+<p class="p1"><span class="s1">        font-family: system-ui, sans-serif;</span></p>
+<p class="p1"><span class="s1">        background: #f5f5f5;</span></p>
+<p class="p1"><span class="s1">        padding: 20px;</span></p>
+<p class="p1"><span class="s1">        min-height: 100vh</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .container {</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        padding: 24px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 12px;</span></p>
+<p class="p1"><span class="s1">        box-shadow: 0 2px 8px rgba(0, 0, 0, .1);</span></p>
+<p class="p1"><span class="s1">        max-width: 500px;</span></p>
+<p class="p1"><span class="s1">        margin: 0 auto 20px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    h1 {</span></p>
+<p class="p1"><span class="s1">        font-size: 22px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 20px;</span></p>
+<p class="p1"><span class="s1">        color: #333</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    h2 {</span></p>
+<p class="p1"><span class="s1">        font-size: 20px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 16px;</span></p>
+<p class="p1"><span class="s1">        color: #333;</span></p>
+<p class="p1"><span class="s1">        text-align: center</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .role-select {</span></p>
+<p class="p1"><span class="s1">        display: flex;</span></p>
+<p class="p1"><span class="s1">        gap: 12px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 20px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .role-btn {</span></p>
+<p class="p1"><span class="s1">        flex: 1;</span></p>
+<p class="p1"><span class="s1">        padding: 16px;</span></p>
+<p class="p1"><span class="s1">        border: 2px solid #ddd;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer;</span></p>
+<p class="p1"><span class="s1">        font-size: 16px;</span></p>
+<p class="p1"><span class="s1">        font-weight: 600;</span></p>
+<p class="p1"><span class="s1">        transition: .3s</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .role-btn.active {</span></p>
+<p class="p1"><span class="s1">        border-color: #4CAF50;</span></p>
+<p class="p1"><span class="s1">        background: #f0f8f0;</span></p>
+<p class="p1"><span class="s1">        color: #4CAF50</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .upload-area {</span></p>
+<p class="p1"><span class="s1">        border: 2px dashed #ccc;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        padding: 40px 20px;</span></p>
+<p class="p1"><span class="s1">        text-align: center;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer;</span></p>
+<p class="p1"><span class="s1">        transition: .3s;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 20px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .upload-area:hover {</span></p>
+<p class="p1"><span class="s1">        border-color: #666;</span></p>
+<p class="p1"><span class="s1">        background: #fafafa</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    input[type="file"] {</span></p>
+<p class="p1"><span class="s1">        display: none</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .preview {</span></p>
+<p class="p1"><span class="s1">        max-width: 100%;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 20px;</span></p>
+<p class="p1"><span class="s1">        display: none</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    select, button, input[type="text"], input[type="number"] {</span></p>
+<p class="p1"><span class="s1">        width: 100%;</span></p>
+<p class="p1"><span class="s1">        padding: 12px;</span></p>
+<p class="p1"><span class="s1">        border: 1px solid #ddd;</span></p>
+<p class="p1"><span class="s1">        border-radius: 6px;</span></p>
+<p class="p1"><span class="s1">        font-size: 16px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    button {</span></p>
+<p class="p1"><span class="s1">        background: #4CAF50;</span></p>
+<p class="p1"><span class="s1">        color: #fff;</span></p>
+<p class="p1"><span class="s1">        border: none;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer;</span></p>
+<p class="p1"><span class="s1">        font-weight: 600;</span></p>
+<p class="p1"><span class="s1">        transition: .3s</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    button:hover {</span></p>
+<p class="p1"><span class="s1">        background: #45a049</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    button:disabled {</span></p>
+<p class="p1"><span class="s1">        background: #ccc;</span></p>
+<p class="p1"><span class="s1">        cursor: not-allowed</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .success {</span></p>
+<p class="p1"><span class="s1">        background: #4CAF50;</span></p>
+<p class="p1"><span class="s1">        color: #fff;</span></p>
+<p class="p1"><span class="s1">        padding: 16px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        text-align: center;</span></p>
+<p class="p1"><span class="s1">        margin-top: 12px;</span></p>
+<p class="p1"><span class="s1">        font-weight: 600</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .error {</span></p>
+<p class="p1"><span class="s1">        background: #f44336;</span></p>
+<p class="p1"><span class="s1">        color: #fff;</span></p>
+<p class="p1"><span class="s1">        padding: 16px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        text-align: center;</span></p>
+<p class="p1"><span class="s1">        margin-top: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .step {</span></p>
+<p class="p1"><span class="s1">        display: none</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .step.active {</span></p>
+<p class="p1"><span class="s1">        display: block</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .filters {</span></p>
+<p class="p1"><span class="s1">        background: #f9f9f9;</span></p>
+<p class="p1"><span class="s1">        padding: 16px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 20px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-card {</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        border: 2px solid #e0e0e0;</span></p>
+<p class="p1"><span class="s1">        border-radius: 8px;</span></p>
+<p class="p1"><span class="s1">        padding: 16px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 12px;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer;</span></p>
+<p class="p1"><span class="s1">        transition: .3s</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-card:hover {</span></p>
+<p class="p1"><span class="s1">        border-color: #4CAF50;</span></p>
+<p class="p1"><span class="s1">        box-shadow: 0 2px 8px rgba(76, 175, 80, .2)</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-card.selected {</span></p>
+<p class="p1"><span class="s1">        border-color: #4CAF50;</span></p>
+<p class="p1"><span class="s1">        background: #f0f8f0</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-code {</span></p>
+<p class="p1"><span class="s1">        font-size: 20px;</span></p>
+<p class="p1"><span class="s1">        font-weight: 700;</span></p>
+<p class="p1"><span class="s1">        color: #333;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 8px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-specs {</span></p>
+<p class="p1"><span class="s1">        display: grid;</span></p>
+<p class="p1"><span class="s1">        grid-template-columns: 1fr 1fr;</span></p>
+<p class="p1"><span class="s1">        gap: 8px;</span></p>
+<p class="p1"><span class="s1">        font-size: 14px;</span></p>
+<p class="p1"><span class="s1">        color: #666</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-status {</span></p>
+<p class="p1"><span class="s1">        display: inline-block;</span></p>
+<p class="p1"><span class="s1">        padding: 4px 12px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 12px;</span></p>
+<p class="p1"><span class="s1">        font-size: 12px;</span></p>
+<p class="p1"><span class="s1">        font-weight: 600;</span></p>
+<p class="p1"><span class="s1">        margin-top: 8px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-status.pending {</span></p>
+<p class="p1"><span class="s1">        background: #FFF3CD;</span></p>
+<p class="p1"><span class="s1">        color: #856404</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-status.submitted {</span></p>
+<p class="p1"><span class="s1">        background: #D1ECF1;</span></p>
+<p class="p1"><span class="s1">        color: #0C5460</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .signage-status.completed {</span></p>
+<p class="p1"><span class="s1">        background: #D4EDDA;</span></p>
+<p class="p1"><span class="s1">        color: #155724</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery {</span></p>
+<p class="p1"><span class="s1">        max-width: 1200px;</span></p>
+<p class="p1"><span class="s1">        margin: 0 auto;</span></p>
+<p class="p1"><span class="s1">        display: grid;</span></p>
+<p class="p1"><span class="s1">        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));</span></p>
+<p class="p1"><span class="s1">        gap: 16px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery-item {</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        border-radius: 12px;</span></p>
+<p class="p1"><span class="s1">        overflow: hidden;</span></p>
+<p class="p1"><span class="s1">        box-shadow: 0 2px 8px rgba(0, 0, 0, .1)</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery-item img {</span></p>
+<p class="p1"><span class="s1">        width: 100%;</span></p>
+<p class="p1"><span class="s1">        height: 250px;</span></p>
+<p class="p1"><span class="s1">        object-fit: cover;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery-item img[data-src] {</span></p>
+<p class="p1"><span class="s1">        background: #f0f0f0</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery-item-info {</span></p>
+<p class="p1"><span class="s1">        padding: 16px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery-item-code {</span></p>
+<p class="p1"><span class="s1">        font-weight: 700;</span></p>
+<p class="p1"><span class="s1">        font-size: 18px;</span></p>
+<p class="p1"><span class="s1">        color: #333;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 8px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .gallery-item-specs {</span></p>
+<p class="p1"><span class="s1">        font-size: 13px;</span></p>
+<p class="p1"><span class="s1">        color: #666;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 8px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .status {</span></p>
+<p class="p1"><span class="s1">        display: inline-block;</span></p>
+<p class="p1"><span class="s1">        padding: 6px 12px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 4px;</span></p>
+<p class="p1"><span class="s1">        font-size: 12px;</span></p>
+<p class="p1"><span class="s1">        font-weight: 600;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .status.pending {</span></p>
+<p class="p1"><span class="s1">        background: #FFF3CD;</span></p>
+<p class="p1"><span class="s1">        color: #856404</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .status.approved {</span></p>
+<p class="p1"><span class="s1">        background: #D4EDDA;</span></p>
+<p class="p1"><span class="s1">        color: #155724</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .status.rejected {</span></p>
+<p class="p1"><span class="s1">        background: #F8D7DA;</span></p>
+<p class="p1"><span class="s1">        color: #721C24</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .action-btns {</span></p>
+<p class="p1"><span class="s1">        display: flex;</span></p>
+<p class="p1"><span class="s1">        gap: 8px;</span></p>
+<p class="p1"><span class="s1">        margin-top: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .action-btns button {</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 0;</span></p>
+<p class="p1"><span class="s1">        padding: 10px;</span></p>
+<p class="p1"><span class="s1">        font-size: 14px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .approve-btn {</span></p>
+<p class="p1"><span class="s1">        background: #4CAF50</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .reject-btn {</span></p>
+<p class="p1"><span class="s1">        background: #f44336</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .reject-btn:hover {</span></p>
+<p class="p1"><span class="s1">        background: #d32f2f</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .back-btn {</span></p>
+<p class="p1"><span class="s1">        background: #666;</span></p>
+<p class="p1"><span class="s1">        margin-top: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .back-btn:hover {</span></p>
+<p class="p1"><span class="s1">        background: #555</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .comment-input {</span></p>
+<p class="p1"><span class="s1">        margin-top: 8px;</span></p>
+<p class="p1"><span class="s1">        display: none</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .view-tabs {</span></p>
+<p class="p1"><span class="s1">        display: flex;</span></p>
+<p class="p1"><span class="s1">        gap: 8px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 16px;</span></p>
+<p class="p1"><span class="s1">        max-width: 1200px;</span></p>
+<p class="p1"><span class="s1">        margin: 0 auto 16px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .view-tab {</span></p>
+<p class="p1"><span class="s1">        flex: 1;</span></p>
+<p class="p1"><span class="s1">        padding: 12px;</span></p>
+<p class="p1"><span class="s1">        border: 1px solid #ddd;</span></p>
+<p class="p1"><span class="s1">        border-radius: 6px;</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer;</span></p>
+<p class="p1"><span class="s1">        font-size: 14px;</span></p>
+<p class="p1"><span class="s1">        text-align: center;</span></p>
+<p class="p1"><span class="s1">        font-weight: 600</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .view-tab.active {</span></p>
+<p class="p1"><span class="s1">        background: #4CAF50;</span></p>
+<p class="p1"><span class="s1">        color: #fff;</span></p>
+<p class="p1"><span class="s1">        border-color: #4CAF50</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .empty {</span></p>
+<p class="p1"><span class="s1">        text-align: center;</span></p>
+<p class="p1"><span class="s1">        color: #999;</span></p>
+<p class="p1"><span class="s1">        padding: 40px;</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        border-radius: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .form-row {</span></p>
+<p class="p1"><span class="s1">        display: grid;</span></p>
+<p class="p1"><span class="s1">        grid-template-columns: 1fr 1fr;</span></p>
+<p class="p1"><span class="s1">        gap: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .modal {</span></p>
+<p class="p1"><span class="s1">        display: none;</span></p>
+<p class="p1"><span class="s1">        position: fixed;</span></p>
+<p class="p1"><span class="s1">        top: 0;</span></p>
+<p class="p1"><span class="s1">        left: 0;</span></p>
+<p class="p1"><span class="s1">        right: 0;</span></p>
+<p class="p1"><span class="s1">        bottom: 0;</span></p>
+<p class="p1"><span class="s1">        background: rgba(0, 0, 0, .8);</span></p>
+<p class="p1"><span class="s1">        z-index: 1000;</span></p>
+<p class="p1"><span class="s1">        align-items: center;</span></p>
+<p class="p1"><span class="s1">        justify-content: center;</span></p>
+<p class="p1"><span class="s1">        padding: 20px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .modal.active {</span></p>
+<p class="p1"><span class="s1">        display: flex</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .modal-content {</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        border-radius: 12px;</span></p>
+<p class="p1"><span class="s1">        max-width: 90vw;</span></p>
+<p class="p1"><span class="s1">        max-height: 90vh;</span></p>
+<p class="p1"><span class="s1">        overflow: auto;</span></p>
+<p class="p1"><span class="s1">        position: relative</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .modal-image {</span></p>
+<p class="p1"><span class="s1">        width: 100%;</span></p>
+<p class="p1"><span class="s1">        height: auto;</span></p>
+<p class="p1"><span class="s1">        display: block</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .modal-close {</span></p>
+<p class="p1"><span class="s1">        position: absolute;</span></p>
+<p class="p1"><span class="s1">        top: 20px;</span></p>
+<p class="p1"><span class="s1">        right: 20px;</span></p>
+<p class="p1"><span class="s1">        background: #fff;</span></p>
+<p class="p1"><span class="s1">        border: none;</span></p>
+<p class="p1"><span class="s1">        width: 40px;</span></p>
+<p class="p1"><span class="s1">        height: 40px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 50%;</span></p>
+<p class="p1"><span class="s1">        font-size: 24px;</span></p>
+<p class="p1"><span class="s1">        cursor: pointer;</span></p>
+<p class="p1"><span class="s1">        box-shadow: 0 2px 8px rgba(0, 0, 0, .3);</span></p>
+<p class="p1"><span class="s1">        z-index: 10</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .api-status {</span></p>
+<p class="p1"><span class="s1">        background: #E3F2FD;</span></p>
+<p class="p1"><span class="s1">        border-left: 4px solid #2196F3;</span></p>
+<p class="p1"><span class="s1">        padding: 12px;</span></p>
+<p class="p1"><span class="s1">        margin-bottom: 16px;</span></p>
+<p class="p1"><span class="s1">        font-size: 14px;</span></p>
+<p class="p1"><span class="s1">        border-radius: 4px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .drive-link {</span></p>
+<p class="p1"><span class="s1">        display: inline-block;</span></p>
+<p class="p1"><span class="s1">        margin-top: 8px;</span></p>
+<p class="p1"><span class="s1">        padding: 6px 12px;</span></p>
+<p class="p1"><span class="s1">        background: #4285F4;</span></p>
+<p class="p1"><span class="s1">        color: #fff;</span></p>
+<p class="p1"><span class="s1">        text-decoration: none;</span></p>
+<p class="p1"><span class="s1">        border-radius: 4px;</span></p>
+<p class="p1"><span class="s1">        font-size: 12px</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    .drive-link:hover {</span></p>
+<p class="p1"><span class="s1">        background: #357AE8</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1">    &lt;/style&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;body&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;div class="container"&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;h1&gt;</span><span class="s2">🏭</span><span class="s1"> Signage Management&lt;/h1&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        &lt;div class="api-status" id="apiStatus"&gt;</span><span class="s2">🔄</span><span class="s1"> Connecting to Google Sheets...&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        &lt;div class="role-select"&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;button class="role-btn active" onclick="setRole('worker')"&gt;</span><span class="s2">👷</span><span class="s1"> Factory Worker&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;button class="role-btn" onclick="setRole('supervisor')"&gt;</span><span class="s2">👔</span><span class="s1"> Supervisor&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        &lt;div id="workerView"&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;div id="workerStep1" class="step active"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;h2&gt;Select Signage&lt;/h2&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;div class="filters"&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;select id="filterWidth" onchange="applyFilters()"&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value=""&gt;All Widths&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="small"&gt;&amp;lt; 2m&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="medium"&gt;2m - 4m&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="large"&gt;&amp;gt; 4m&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;/select&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;select id="filterHeight" onchange="applyFilters()"&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value=""&gt;All Heights&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="small"&gt;&amp;lt; 1m&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="medium"&gt;1m - 2m&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="large"&gt;&amp;gt; 2m&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;/select&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;select id="filterIllumination" onchange="applyFilters()"&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value=""&gt;All Types&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="Yes"&gt;Illuminated&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                        &lt;option value="No"&gt;Non-Illuminated&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;/select&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;div id="signageList"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">            &lt;div id="workerStep2" class="step"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;h2&gt;Upload Photo&lt;/h2&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;div id="selectedSignageInfo"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;div class="upload-area" onclick="document.getElementById('fileInput').click()"&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;p&gt;</span><span class="s2">📷</span><span class="s1"> Tap to capture photo&lt;/p&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;input type="file" id="fileInput" accept="image/*" capture="environment"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;img id="preview" class="preview"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;button id="submitBtn" style="display:none" onclick="submitUpload()"&gt;Submit Photo&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;button class="back-btn" onclick="backToList()"&gt;← Back to List&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        &lt;div id="supervisorView" style="display:none"&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;div id="supervisorStep1" class="step active"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;h2&gt;Add New Signage&lt;/h2&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;input type="text" id="newCode" placeholder="Signage Code (e.g., CCB-004)"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;div class="form-row"&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;input type="number" id="newWidth" placeholder="Width (m)" step="0.1"&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;input type="number" id="newHeight" placeholder="Height (m)" step="0.1"&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;select id="newIllumination"&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;option value=""&gt;Illumination?&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;option value="Yes"&gt;Yes&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                    &lt;option value="No"&gt;No&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;/select&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;button onclick="addSignage()"&gt;Add Signage&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">                &lt;div id="supervisorMessage"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    &lt;div style="max-width:1200px;margin:20px auto"&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;h2 id="galleryTitle"&gt;</span><span class="s2">📋</span><span class="s1"> Review Uploads&lt;/h2&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;div class="view-tabs" id="viewTabs" style="display:none"&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;button class="view-tab active" onclick="setView('pending')"&gt;Pending&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;button class="view-tab" onclick="setView('approved')"&gt;Approved&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;button class="view-tab" onclick="setView('rejected')"&gt;Rejected&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;button class="view-tab" onclick="setView('all')"&gt;All&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;div id="gallery" class="gallery"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;div id="emptyGallery" class="empty" style="display:none"&gt;No uploads yet&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    &lt;div id="imageModal" class="modal" onclick="closeModal()"&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;button class="modal-close" onclick="closeModal()"&gt;×&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;div class="modal-content" onclick="event.stopPropagation()"&gt;</span></p>
+<p class="p1"><span class="s1">            &lt;img id="modalImage" class="modal-image"&gt;</span></p>
+<p class="p1"><span class="s1">        &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    &lt;script&gt;</span></p>
+<p class="p1"><span class="s1">    const API_URL = 'https://script.google.com/macros/s/AKfycbylzTLaiVd1iXdI4rYhripLQz3mlMlUXgt68hhVh4PO5OQdpvT7mREC2Wd_Up07Lgfe-A/exec';</span></p>
+<p class="p1"><span class="s1">    let currentRole = 'worker';</span></p>
+<p class="p1"><span class="s1">    let currentView = 'pending';</span></p>
+<p class="p1"><span class="s1">    let allSignage = [];</span></p>
+<p class="p1"><span class="s1">    let allUploads = [];</span></p>
+<p class="p1"><span class="s1">    let selectedSignage = null;</span></p>
+<p class="p1"><span class="s1">    let selectedImage = null;</span></p>
+<p class="p1"><span class="s1">    let signageByCode = {};</span></p>
+<p class="p1"><span class="s1">// Instant render from last good data (if available)</span></p>
+<p class="p1"><span class="s1">try {</span></p>
+<p class="p1"><span class="s1">  const cached = localStorage.getItem('signage_cache_v1');</span></p>
+<p class="p1"><span class="s1">  if (cached) {</span></p>
+<p class="p1"><span class="s1">    const {signage, uploads} = JSON.parse(cached);</span></p>
+<p class="p1"><span class="s1">    if (Array.isArray(signage) &amp;&amp; Array.isArray(uploads)) {</span></p>
+<p class="p1"><span class="s1">      allSignage = signage;</span></p>
+<p class="p1"><span class="s1">      signageByCode = Object.fromEntries(allSignage.map(s =&gt; [s.code, s]));</span></p>
+<p class="p1"><span class="s1">      allUploads = uploads;</span></p>
+<p class="p1"><span class="s1">      applyFilters();</span></p>
+<p class="p1"><span class="s1">      resetPagination();</span></p>
+<p class="p1"><span class="s1">      loadGallery();</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1">  }</span></p>
+<p class="p1"><span class="s1">} catch(_) {}</span></p>
+<p class="p1"><span class="s1">const PAGE_SIZE = 20;</span></p>
+<p class="p1"><span class="s1">let page = 1;</span></p>
+<p class="p1"><span class="s1">let itemsForView = [];</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">function resetPagination(){</span></p>
+<p class="p1"><span class="s1">  page = 1;</span></p>
+<p class="p1"><span class="s1">  itemsForView = (currentView==='all') ? allUploads : allUploads.filter(u=&gt;u.status===currentView);</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">    const urlCache = new Map();</span></p>
+<p class="p1"><span class="s1">    function convertDriveUrl(url) {</span></p>
+<p class="p1"><span class="s1">        if (!url)</span></p>
+<p class="p1"><span class="s1">            return '';</span></p>
+<p class="p1"><span class="s1">        if (urlCache.has(url))</span></p>
+<p class="p1"><span class="s1">            return urlCache.get(url);</span></p>
+<p class="p1"><span class="s1">        const match = url.match(/\/d\/([^\/]+)/);</span></p>
+<p class="p1"><span class="s1">const result=match?`https://drive.google.com/thumbnail?id=${match[1]}&amp;sz=w256`:url;</span></p>
+<p class="p1"><span class="s1">        urlCache.set(url, result);</span></p>
+<p class="p1"><span class="s1">        return result;</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1">   async function loadData(){</span></p>
+<p class="p1"><span class="s1">  const statusEl=document.getElementById('apiStatus');</span></p>
+<p class="p1"><span class="s1">  try{</span></p>
+<p class="p1"><span class="s1">    statusEl.innerHTML='</span><span class="s2">🔄</span><span class="s1"> Loading data...';</span></p>
+<p class="p1"><span class="s1">    statusEl.style.background='#E3F2FD';</span></p>
+<p class="p1"><span class="s1">    statusEl.style.borderColor='#2196F3';</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    // Load both endpoints in parallel</span></p>
+<p class="p1"><span class="s1">    const [signageRes, uploadsRes] = await Promise.all([</span></p>
+<p class="p1"><span class="s1">      fetch(API_URL+'?action=getSignage&amp;t='+Date.now(), {method:'GET', redirect:'follow'}),</span></p>
+<p class="p1"><span class="s1">      fetch(API_URL+'?action=getUploads&amp;t='+Date.now(),  {method:'GET', redirect:'follow'})</span></p>
+<p class="p1"><span class="s1">    ]);</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    if(!signageRes.ok) throw new Error('Failed to fetch signage');</span></p>
+<p class="p1"><span class="s1">    if(!uploadsRes.ok) throw new Error('Failed to fetch uploads');</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    const [signageData, uploadsData] = await Promise.all([</span></p>
+<p class="p1"><span class="s1">      signageRes.json(), uploadsRes.json()</span></p>
+<p class="p1"><span class="s1">    ]);</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    allSignage = signageData.data || [];</span></p>
+<p class="p1"><span class="s1">    signageByCode = Object.fromEntries(allSignage.map(s =&gt; [s.code, s]));</span></p>
+<p class="p1"><span class="s1">    allUploads  = uploadsData.data || [];</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    // Cache last good payload for instant next-load</span></p>
+<p class="p1"><span class="s1">    try {</span></p>
+<p class="p1"><span class="s1">      localStorage.setItem('signage_cache_v1', JSON.stringify({</span></p>
+<p class="p1"><span class="s1">        signage: allSignage,</span></p>
+<p class="p1"><span class="s1">        uploads: allUploads</span></p>
+<p class="p1"><span class="s1">      }));</span></p>
+<p class="p1"><span class="s1">    } catch(_) {}</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    statusEl.innerHTML='</span><span class="s2">✅</span><span class="s1"> Connected ('+allSignage.length+' signage, '+allUploads.length+' uploads)';</span></p>
+<p class="p1"><span class="s1">    statusEl.style.background='#D4EDDA';</span></p>
+<p class="p1"><span class="s1">    statusEl.style.borderColor='#155724';</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    applyFilters();</span></p>
+<p class="p1"><span class="s1">    resetPagination();</span></p>
+<p class="p1"><span class="s1">    loadGallery();</span></p>
+<p class="p1"><span class="s1">  }catch(err){</span></p>
+<p class="p1"><span class="s1">    console.error('Load error:',err);</span></p>
+<p class="p1"><span class="s1">    statusEl.innerHTML='</span><span class="s2">❌</span><span class="s1"> Error: '+err.message;</span></p>
+<p class="p1"><span class="s1">    statusEl.style.background='#F8D7DA';</span></p>
+<p class="p1"><span class="s1">    statusEl.style.borderColor='#721C24';</span></p>
+<p class="p1"><span class="s1">    document.getElementById('signageList').innerHTML='&lt;div class="error"&gt;Connection error. Please refresh.&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1">  }</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">    function setRole(role) {</span></p>
+<p class="p1"><span class="s1">        currentRole = role;</span></p>
+<p class="p1"><span class="s1">        document.querySelectorAll('.role-btn').forEach(b =&gt; b.classList.remove('active'));</span></p>
+<p class="p1"><span class="s1">        event.target.classList.add('active');</span></p>
+<p class="p1"><span class="s1">        document.getElementById('workerView').style.display = role === 'worker' ? 'block' : 'none';</span></p>
+<p class="p1"><span class="s1">        document.getElementById('supervisorView').style.display = role === 'supervisor' ? 'block' : 'none';</span></p>
+<p class="p1"><span class="s1">        document.getElementById('viewTabs').style.display = role === 'supervisor' ? 'flex' : 'none';</span></p>
+<p class="p1"><span class="s1">        document.getElementById('galleryTitle').textContent = role === 'worker' ? '</span><span class="s2">📋</span><span class="s1"> My Submissions' : '</span><span class="s2">📋</span><span class="s1"> Review Uploads';</span></p>
+<p class="p1"><span class="s1">        if (role === 'supervisor')</span></p>
+<p class="p1"><span class="s1">            setView('pending');</span></p>
+<p class="p1"><span class="s1">        else</span></p>
+<p class="p1"><span class="s1">            loadGallery();</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    let filterTimeout;</span></p>
+<p class="p1"><span class="s1">    function applyFilters() {</span></p>
+<p class="p1"><span class="s1">        clearTimeout(filterTimeout);</span></p>
+<p class="p1"><span class="s1">        filterTimeout = setTimeout(() =&gt; {</span></p>
+<p class="p1"><span class="s1">            const width = document.getElementById('filterWidth').value;</span></p>
+<p class="p1"><span class="s1">            const height = document.getElementById('filterHeight').value;</span></p>
+<p class="p1"><span class="s1">            const illum = document.getElementById('filterIllumination').value;</span></p>
+<p class="p1"><span class="s1">            let filtered = allSignage.filter(s =&gt; {</span></p>
+<p class="p1"><span class="s1">                let match = true;</span></p>
+<p class="p1"><span class="s1">                if (width === 'small' &amp;&amp; parseFloat(s.width) &gt;= 2)</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                if (width === 'medium' &amp;&amp; (parseFloat(s.width) &lt; 2 || parseFloat(s.width) &gt; 4))</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                if (width === 'large' &amp;&amp; parseFloat(s.width) &lt;= 4)</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                if (height === 'small' &amp;&amp; parseFloat(s.height) &gt;= 1)</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                if (height === 'medium' &amp;&amp; (parseFloat(s.height) &lt; 1 || parseFloat(s.height) &gt; 2))</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                if (height === 'large' &amp;&amp; parseFloat(s.height) &lt;= 2)</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                if (illum &amp;&amp; s.illumination !== illum)</span></p>
+<p class="p1"><span class="s1">                    match = false;</span></p>
+<p class="p1"><span class="s1">                return match;</span></p>
+<p class="p1"><span class="s1">            });</span></p>
+<p class="p1"><span class="s1">            displaySignageList(filtered);</span></p>
+<p class="p1"><span class="s1">        }, 150);</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    function displaySignageList(list) {</span></p>
+<p class="p1"><span class="s1">        const container = document.getElementById('signageList');</span></p>
+<p class="p1"><span class="s1">        if (list.length === 0) {</span></p>
+<p class="p1"><span class="s1">            container.innerHTML = '&lt;div class="empty"&gt;No signage found&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1">            return;</span></p>
+<p class="p1"><span class="s1">        }</span></p>
+<p class="p1"><span class="s1">        container.innerHTML = list.map(s =&gt; `</span></p>
+<p class="p1"><span class="s1">&lt;div class="signage-card" onclick="selectSignage('${s.code}')"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div class="signage-code"&gt;${s.code}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div class="signage-specs"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div&gt;</span><span class="s2">📏</span><span class="s1"> ${</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        s.width}m × ${s.height}m&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div&gt;</span><span class="s2">💡</span><span class="s1"> ${s.illumination === 'Yes' ? 'Illuminated' : 'Standard'}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;span class="signage-status ${</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        s.status.toLowerCase()}"&gt;${s.status}&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">`</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        ).join('');</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    function selectSignage(code) {</span></p>
+<p class="p1"><span class="s1">        selectedSignage = signageByCode[code];</span></p>
+<p class="p1"><span class="s1">        document.getElementById('selectedSignageInfo').innerHTML = `</span></p>
+<p class="p1"><span class="s1">&lt;div class="signage-card selected"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div class="signage-code"&gt;${</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        selectedSignage.code}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div class="signage-specs"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div&gt;</span><span class="s2">📏</span><span class="s1"> ${</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        selectedSignage.width}m × ${selectedSignage.height}m&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div&gt;</span><span class="s2">💡</span><span class="s1"> ${selectedSignage.illumination === 'Yes' ? 'Illuminated' : 'Standard'}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">`</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">        ;</span></p>
+<p class="p1"><span class="s1">        document.getElementById('workerStep1').classList.remove('active');</span></p>
+<p class="p1"><span class="s1">        document.getElementById('workerStep2').classList.add('active');</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    function backToList() {</span></p>
+<p class="p1"><span class="s1">        document.getElementById('workerStep2').classList.remove('active');</span></p>
+<p class="p1"><span class="s1">        document.getElementById('workerStep1').classList.add('active');</span></p>
+<p class="p1"><span class="s1">        document.getElementById('preview').style.display = 'none';</span></p>
+<p class="p1"><span class="s1">        document.getElementById('submitBtn').style.display = 'none';</span></p>
+<p class="p1"><span class="s1">        selectedSignage = null;</span></p>
+<p class="p1"><span class="s1">        selectedImage = null;</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    document.getElementById('fileInput').onchange = function(e) {</span></p>
+<p class="p1"><span class="s1">        const file = e.target.files[0];</span></p>
+<p class="p1"><span class="s1">        if (!file)</span></p>
+<p class="p1"><span class="s1">            return;</span></p>
+<p class="p1"><span class="s1">        const reader = new FileReader();</span></p>
+<p class="p1"><span class="s1">        reader.onload = function(e) {</span></p>
+<p class="p1"><span class="s1">            selectedImage = e.target.result;</span></p>
+<p class="p1"><span class="s1">            document.getElementById('preview').src = selectedImage;</span></p>
+<p class="p1"><span class="s1">            document.getElementById('preview').style.display = 'block';</span></p>
+<p class="p1"><span class="s1">            document.getElementById('submitBtn').style.display = 'block';</span></p>
+<p class="p1"><span class="s1">        };</span></p>
+<p class="p1"><span class="s1">        reader.readAsDataURL(file);</span></p>
+<p class="p1"><span class="s1">    };</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    async function submitUpload() {</span></p>
+<p class="p1"><span class="s1">        if (!selectedSignage || !selectedImage)</span></p>
+<p class="p1"><span class="s1">            return;</span></p>
+<p class="p1"><span class="s1">        const btn = document.getElementById('submitBtn');</span></p>
+<p class="p1"><span class="s1">        btn.disabled = true;</span></p>
+<p class="p1"><span class="s1">        btn.textContent = 'Uploading to Drive...';</span></p>
+<p class="p1"><span class="s1">        try {</span></p>
+<p class="p1"><span class="s1">            await fetch(API_URL, {</span></p>
+<p class="p1"><span class="s1">                method: 'POST',</span></p>
+<p class="p1"><span class="s1">                mode: 'no-cors',</span></p>
+<p class="p1"><span class="s1">                headers: {</span></p>
+<p class="p1"><span class="s1">                    'Content-Type': 'application/json'</span></p>
+<p class="p1"><span class="s1">                },</span></p>
+<p class="p1"><span class="s1">                body: JSON.stringify({</span></p>
+<p class="p1"><span class="s1">                    action: 'uploadImage',</span></p>
+<p class="p1"><span class="s1">                    code: selectedSignage.code,</span></p>
+<p class="p1"><span class="s1">                    imageData: selectedImage,</span></p>
+<p class="p1"><span class="s1">                    worker: 'Worker'</span></p>
+<p class="p1"><span class="s1">                })</span></p>
+<p class="p1"><span class="s1">            });</span></p>
+<p class="p1"><span class="s1">            alert('</span><span class="s2">✅</span><span class="s1"> Photo uploaded!\nFilename: '+selectedSignage.code+'.jpg');</span></p>
+<p class="p1"><span class="s1">backToList();</span></p>
+<p class="p1"><span class="s1">loadData();        } catch (err) {</span></p>
+<p class="p1"><span class="s1">            alert('</span><span class="s2">❌</span><span class="s1"> Upload failed: ' + err.message);</span></p>
+<p class="p1"><span class="s1">        } finally {</span></p>
+<p class="p1"><span class="s1">            btn.disabled = false;</span></p>
+<p class="p1"><span class="s1">            btn.textContent = 'Submit Photo';</span></p>
+<p class="p1"><span class="s1">        }</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    async function addSignage() {</span></p>
+<p class="p1"><span class="s1">        const code = document.getElementById('newCode').value.trim();</span></p>
+<p class="p1"><span class="s1">        const width = document.getElementById('newWidth').value;</span></p>
+<p class="p1"><span class="s1">        const height = document.getElementById('newHeight').value;</span></p>
+<p class="p1"><span class="s1">        const illum = document.getElementById('newIllumination').value;</span></p>
+<p class="p1"><span class="s1">        if (!code || !width || !height || !illum) {</span></p>
+<p class="p1"><span class="s1">            alert('Please fill all fields');</span></p>
+<p class="p1"><span class="s1">            return;</span></p>
+<p class="p1"><span class="s1">        }</span></p>
+<p class="p1"><span class="s1">        try {</span></p>
+<p class="p1"><span class="s1">            await fetch(API_URL, {</span></p>
+<p class="p1"><span class="s1">                method: 'POST',</span></p>
+<p class="p1"><span class="s1">                mode: 'no-cors',</span></p>
+<p class="p1"><span class="s1">                headers: {</span></p>
+<p class="p1"><span class="s1">                    'Content-Type': 'application/json'</span></p>
+<p class="p1"><span class="s1">                },</span></p>
+<p class="p1"><span class="s1">                body: JSON.stringify({</span></p>
+<p class="p1"><span class="s1">                    action: 'addSignage',</span></p>
+<p class="p1"><span class="s1">                    code,</span></p>
+<p class="p1"><span class="s1">                    width,</span></p>
+<p class="p1"><span class="s1">                    height,</span></p>
+<p class="p1"><span class="s1">                    illumination: illum</span></p>
+<p class="p1"><span class="s1">                })</span></p>
+<p class="p1"><span class="s1">            });</span></p>
+<p class="p1"><span class="s1">            document.getElementById('supervisorMessage').innerHTML = '&lt;div class="success"&gt;</span><span class="s2">✅</span><span class="s1"> Signage added!&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1">            document.getElementById('newCode').value = '';</span></p>
+<p class="p1"><span class="s1">            document.getElementById('newWidth').value = '';</span></p>
+<p class="p1"><span class="s1">            document.getElementById('newHeight').value = '';</span></p>
+<p class="p1"><span class="s1">            document.getElementById('newIllumination').value = '';</span></p>
+<p class="p1"><span class="s1">            setTimeout(() =&gt; document.getElementById('supervisorMessage').innerHTML = '', 3000);</span></p>
+<p class="p1"><span class="s1">            setTimeout(loadData, 2000);</span></p>
+<p class="p1"><span class="s1">        } catch (err) {</span></p>
+<p class="p1"><span class="s1">            alert('Error adding signage');</span></p>
+<p class="p1"><span class="s1">        }</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">function setView(view){</span></p>
+<p class="p1"><span class="s1">  currentView=view;</span></p>
+<p class="p1"><span class="s1">  document.querySelectorAll('.view-tab').forEach(b=&gt;b.classList.remove('active'));</span></p>
+<p class="p1"><span class="s1">  event.target.classList.add('active');</span></p>
+<p class="p1"><span class="s1">  resetPagination();</span></p>
+<p class="p1"><span class="s1">  loadGallery();</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">    function loadGallery(){</span></p>
+<p class="p1"><span class="s1">  const container=document.getElementById('gallery');</span></p>
+<p class="p1"><span class="s1">  const empty=document.getElementById('emptyGallery');</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">  // Ensure we have the correct filtered list</span></p>
+<p class="p1"><span class="s1">  if (!itemsForView.length) {</span></p>
+<p class="p1"><span class="s1">    itemsForView = (currentView==='all') ? allUploads : allUploads.filter(u=&gt;u.status===currentView);</span></p>
+<p class="p1"><span class="s1">  }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">  if(itemsForView.length===0){</span></p>
+<p class="p1"><span class="s1">    container.innerHTML='';</span></p>
+<p class="p1"><span class="s1">    empty.style.display='block';</span></p>
+<p class="p1"><span class="s1">    return;</span></p>
+<p class="p1"><span class="s1">  }</span></p>
+<p class="p1"><span class="s1">  empty.style.display='none';</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">  // Slice for current page</span></p>
+<p class="p1"><span class="s1">  const slice = itemsForView.slice(0, PAGE_SIZE*page);</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">  const fragment=document.createDocumentFragment();</span></p>
+<p class="p1"><span class="s1">  container.innerHTML=''; // re-render current slice</span></p>
+<p class="p1"><span class="s1">  slice.forEach((u,i)=&gt;{</span></p>
+<p class="p1"><span class="s1">    const signage=signageByCode[u.code]||{};</span></p>
+<p class="p1"><span class="s1">    const thumbUrl=convertDriveUrl(u.imageUrl);</span></p>
+<p class="p1"><span class="s1">    const div=document.createElement('div');</span></p>
+<p class="p1"><span class="s1">    div.className='gallery-item';</span></p>
+<p class="p1"><span class="s1">    div.innerHTML=`&lt;img data-src="${thumbUrl}" loading="lazy" decoding="async" fetchpriority="low" onclick="window.open('${u.imageUrl}','_blank')"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div class="gallery-item-info"&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;div class="gallery-item-code"&gt;${u.code}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;div class="gallery-item-specs"&gt;</span><span class="s2">📏</span><span class="s1"> ${signage.width||'?'}m × ${signage.height||'?'}m | </span><span class="s2">💡</span><span class="s1"> ${signage.illumination||'?'}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;div class="gallery-item-specs"&gt;</span><span class="s2">📅</span><span class="s1"> ${new Date(u.uploadDate).toLocaleDateString()}&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;span class="status ${u.status}"&gt;${u.status.toUpperCase()}&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;a href="${u.imageUrl}" target="_blank" class="drive-link"&gt;</span><span class="s2">📂</span><span class="s1"> Open in Drive&lt;/a&gt;</span></p>
+<p class="p1"><span class="s1">  ${currentRole==='supervisor'&amp;&amp;u.status==='pending'?`</span></p>
+<p class="p1"><span class="s1">  &lt;div class="action-btns"&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;button class="approve-btn" onclick="updateStatus('${u.code}','approved','${i}')"&gt;✓ Approve&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">    &lt;button class="reject-btn" onclick="toggleRejectInput(${i})"&gt;✗ Reject&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;input type="text" id="comment${i}" class="comment-input" placeholder="Rejection reason..."&gt;</span></p>
+<p class="p1"><span class="s1">  &lt;button id="rejectConfirm${i}" style="display:none;background:#f44336;margin-top:8px" onclick="updateStatus('${u.code}','rejected','${i}')"&gt;Confirm Reject&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">  `:''}</span></p>
+<p class="p1"><span class="s1">  ${u.reviewComment?`&lt;div style="margin-top:8px;font-size:12px;color:#721C24;background:#F8D7DA;padding:8px;border-radius:4px"&gt;</span><span class="s2">💬</span><span class="s1"> ${u.reviewComment}&lt;/div&gt;`:''}</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;`;</span></p>
+<p class="p1"><span class="s1">    fragment.appendChild(div);</span></p>
+<p class="p1"><span class="s1">  });</span></p>
+<p class="p1"><span class="s1">  container.appendChild(fragment);</span></p>
+<p class="p1"><span class="s1">  observeImages();</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">let scrollBound = false;</span></p>
+<p class="p1"><span class="s1">function bindScrollOnce(){</span></p>
+<p class="p1"><span class="s1">  if (scrollBound) return;</span></p>
+<p class="p1"><span class="s1">  scrollBound = true;</span></p>
+<p class="p1"><span class="s1">  window.addEventListener('scroll', () =&gt; {</span></p>
+<p class="p1"><span class="s1">    const nearBottom = window.innerHeight + window.scrollY + 200 &gt;= document.body.offsetHeight;</span></p>
+<p class="p1"><span class="s1">    if (nearBottom) {</span></p>
+<p class="p1"><span class="s1">      const totalPages = Math.ceil(itemsForView.length / PAGE_SIZE);</span></p>
+<p class="p1"><span class="s1">      if (page &lt; totalPages) { page++; loadGallery(); }</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1">  });</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">bindScrollOnce();</span></p>
+<p class="p1"><span class="s1">    function toggleRejectInput(idx) {</span></p>
+<p class="p1"><span class="s1">        const input = document.getElementById('comment' + idx);</span></p>
+<p class="p1"><span class="s1">        const btn = document.getElementById('rejectConfirm' + idx);</span></p>
+<p class="p1"><span class="s1">        input.style.display = 'block';</span></p>
+<p class="p1"><span class="s1">        btn.style.display = 'block';</span></p>
+<p class="p1"><span class="s1">        input.focus();</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    async function updateStatus(code, status, idx) {</span></p>
+<p class="p1"><span class="s1">        let comment = '';</span></p>
+<p class="p1"><span class="s1">        if (status === 'rejected') {</span></p>
+<p class="p1"><span class="s1">            comment = document.getElementById('comment' + idx).value.trim();</span></p>
+<p class="p1"><span class="s1">            if (!comment) {</span></p>
+<p class="p1"><span class="s1">                alert('Please enter rejection reason');</span></p>
+<p class="p1"><span class="s1">                return;</span></p>
+<p class="p1"><span class="s1">            }</span></p>
+<p class="p1"><span class="s1">        }</span></p>
+<p class="p1"><span class="s1">        try {</span></p>
+<p class="p1"><span class="s1">            await fetch(API_URL, {</span></p>
+<p class="p1"><span class="s1">                method: 'POST',</span></p>
+<p class="p1"><span class="s1">                mode: 'no-cors',</span></p>
+<p class="p1"><span class="s1">                headers: {</span></p>
+<p class="p1"><span class="s1">                    'Content-Type': 'application/json'</span></p>
+<p class="p1"><span class="s1">                },</span></p>
+<p class="p1"><span class="s1">                body: JSON.stringify({</span></p>
+<p class="p1"><span class="s1">                    action: 'updateStatus',</span></p>
+<p class="p1"><span class="s1">                    code,</span></p>
+<p class="p1"><span class="s1">                    status,</span></p>
+<p class="p1"><span class="s1">                    comment,</span></p>
+<p class="p1"><span class="s1">                    reviewedBy: 'Supervisor'</span></p>
+<p class="p1"><span class="s1">                })</span></p>
+<p class="p1"><span class="s1">            });</span></p>
+<p class="p1"><span class="s1">            alert('</span><span class="s2">✅</span><span class="s1"> Status updated!');</span></p>
+<p class="p1"><span class="s1">loadData();        } catch (err) {</span></p>
+<p class="p1"><span class="s1">            alert('Error updating status');</span></p>
+<p class="p1"><span class="s1">        }</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    function openModal(src) {</span></p>
+<p class="p1"><span class="s1">        window.open(src, '_blank');</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    function closeModal() {</span></p>
+<p class="p1"><span class="s1">        document.getElementById('imageModal').classList.remove('active');</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    window.selectSignage = selectSignage;</span></p>
+<p class="p1"><span class="s1">    window.setRole = setRole;</span></p>
+<p class="p1"><span class="s1">    window.setView = setView;</span></p>
+<p class="p1"><span class="s1">    window.applyFilters = applyFilters;</span></p>
+<p class="p1"><span class="s1">    window.submitUpload = submitUpload;</span></p>
+<p class="p1"><span class="s1">    window.addSignage = addSignage;</span></p>
+<p class="p1"><span class="s1">    window.updateStatus = updateStatus;</span></p>
+<p class="p1"><span class="s1">    window.toggleRejectInput = toggleRejectInput;</span></p>
+<p class="p1"><span class="s1">    window.backToList = backToList;</span></p>
+<p class="p1"><span class="s1">    const imgObserver = new IntersectionObserver((entries) =&gt; {</span></p>
+<p class="p1"><span class="s1">        entries.forEach(e =&gt; {</span></p>
+<p class="p1"><span class="s1">            if (e.isIntersecting) {</span></p>
+<p class="p1"><span class="s1">                const img = e.target;</span></p>
+<p class="p1"><span class="s1">                img.src = img.dataset.src;</span></p>
+<p class="p1"><span class="s1">                img.removeAttribute('data-src');</span></p>
+<p class="p1"><span class="s1">                imgObserver.unobserve(img);</span></p>
+<p class="p1"><span class="s1">            }</span></p>
+<p class="p1"><span class="s1">        });</span></p>
+<p class="p1"><span class="s1">    }, {</span></p>
+<p class="p1"><span class="s1">        rootMargin: '50px'</span></p>
+<p class="p1"><span class="s1">    });</span></p>
+<p class="p1"><span class="s1"> </span></p>
+<p class="p1"><span class="s1">    function observeImages() {</span></p>
+<p class="p1"><span class="s1">        document.querySelectorAll('img[data-src]').forEach(img =&gt; imgObserver.observe(img));</span></p>
+<p class="p1"><span class="s1">    }</span></p>
+<p class="p1"><span class="s1">    loadData();</span></p>
+<p class="p1"><span class="s1">    &lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
 </body>
 </html>
