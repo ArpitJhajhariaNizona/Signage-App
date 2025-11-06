@@ -507,8 +507,16 @@
       Required columns (exact names): <b>Station, Code, Type, Width, Height, Illumination, Mounting, Sides</b><br>
       File types: .xlsx, .xls, .csv
     </p>
-    <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" />
-    <button style="margin-top:8px" onclick="importSignageFromExcel()">Upload &amp; Import</button>
+    <input
+  type="file"
+  id="excelInput"
+  accept=".xlsx,.xls,.csv"
+  onchange="importSignageFromExcel()"
+  style="display:block; position:absolute; left:-9999px; opacity:0;"
+/>
+
+    <button style="margin-top:8px" onclick="document.getElementById('excelInput').click()">Choose file &amp; Import</button>
+
   </div>
   <div id="excelImportStatus" class="api-status">Waiting for file…</div>
 </div>
