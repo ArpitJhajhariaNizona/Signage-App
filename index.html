@@ -466,7 +466,12 @@
     <div class="container">
         <h1>🏭 Signage Management</h1>
 
-        <div class="api-status" id="apiStatus">🔄 Connecting to Google Sheets...</div>
+        <div class="api-status" id="apiStatus">
+    🔄 Connecting to database...
+    <button onclick="loadData()" style="margin-left:12px; padding:4px 12px; background:#2196F3; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px">
+        🔄 Retry
+    </button>
+</div>
 
         <div class="role-select">
             <button class="role-btn active" onclick="setRole('worker')">👷 Factory Worker</button>
@@ -604,6 +609,15 @@
 const SUPABASE_URL = "https://vxkkmqtzjxfiiyggswcx.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4a2ttcXR6anhmaWl5Z2dzd2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NDU5NzgsImV4cCI6MjA3ODAyMTk3OH0.Gv1wjTo2XqKQbkaq1bgxe5RtZk_v8LUwF3BKnLNTD5I";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+        // Test connection
+sb.from('signage').select('count', { count: 'exact', head: true })
+  .then(result => {
+    if (result.error) {
+      console.error('Supabase connection error:', result.error);
+      document.getElementById('apiStatus').innerHTML = 
+        '❌ Database connection failed: ' + result.error.message;
+    }
+  });
 // Instant render from last good data (if available)
 try {
   const cached = localStorage.getItem('signage_cache_v1');
@@ -613,12 +627,19 @@ try {
       allSignage = signage;
       signageByCode = Object.fromEntries(allSignage.map(s => [s.code, s]));
       allUploads = uploads;
+      if (allSignage.length > 0) {
+        populateFilters();
+      }
       applyFilters();
       resetPagination();
       loadGallery();
+      document.getElementById('apiStatus').innerHTML = '📦 Loaded from cache - refreshing...';
     }
   }
-} catch(_) {}
+} catch(e) {
+  console.log('Cache error:', e);
+}
+
 const PAGE_SIZE = 20;
 let page = 1;
 let itemsForView = [];
@@ -765,7 +786,7 @@ async function importSignageFromExcel(){
   }
 }
 
-   async function loadData(){
+ async function loadData(){
   const statusEl = document.getElementById('apiStatus');
 
   try {
@@ -776,21 +797,62 @@ async function importSignageFromExcel(){
       sb.from('uploads').select('*').order('upload_date', { ascending: false })
     ]);
 
+    // Check for errors in response
+    if (signageRes.error) throw signageRes.error;
+    if (uploadsRes.error) throw uploadsRes.error;
+
     allSignage = signageRes.data || [];
     signageByCode = Object.fromEntries(allSignage.map(s => [s.code, s]));
     allUploads = uploadsRes.data || [];
 
+    // Cache successful data
+    try {
+      localStorage.setItem('signage_cache_v1', JSON.stringify({
+        signage: allSignage,
+        uploads: allUploads
+      }));
+    } catch(e) {
+      console.log('Cache save failed:', e);
+    }
+
     populateFilters();
-applyFilters();
+    applyFilters();
     resetPagination();
     loadGallery();
 
     statusEl.innerHTML = "✅ Synced with database";
   }
   catch(err){
-    statusEl.innerHTML = "❌ Error loading data";
+    console.error('Load error:', err);
+    statusEl.innerHTML = "⚠️ Using cached data - " + (err.message || 'Connection issue');
+    
+    // Try to use cached data if available
+    if (allSignage.length === 0) {
+      try {
+        const cached = localStorage.getItem('signage_cache_v1');
+        if (cached) {
+          const {signage, uploads} = JSON.parse(cached);
+          allSignage = signage || [];
+          signageByCode = Object.fromEntries(allSignage.map(s => [s.code, s]));
+          allUploads = uploads || [];
+        }
+      } catch(e) {
+        console.log('Cache load failed:', e);
+      }
+    }
+    
+    // Still show UI even if there's an error
+    if (allSignage.length > 0) {
+      populateFilters();
+      applyFilters();
+      resetPagination();
+      loadGallery();
+    } else {
+      statusEl.innerHTML = "❌ No data available - Please check connection";
+    }
   }
-}    function setRole(role) {
+}    
+        function setRole(role) {
         currentRole = role;
         document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
@@ -804,7 +866,11 @@ applyFilters();
             loadGallery();
     }
     function populateFilters() {
-    // Get unique values for each filter
+      // Don't populate if no data yet
+    if (!allSignage || allSignage.length === 0) {
+        return;
+    }
+        // Get unique values for each filter
     const stations = [...new Set(allSignage.map(s => s.station).filter(Boolean))].sort();
     const types = [...new Set(allSignage.map(s => s.type).filter(Boolean))].sort();
     const widths = [...new Set(allSignage.map(s => s.width).filter(Boolean))].sort((a,b) => parseFloat(a) - parseFloat(b));
