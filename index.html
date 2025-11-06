@@ -552,6 +552,8 @@
     let selectedSignage = null;
     let selectedImage = null;
     let signageByCode = {};
+        let selectedFile = null;
+
 // ---- Supabase init ----
 const SUPABASE_URL = "https://vxkkmqtzjxfiiyggswcx.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4a2ttcXR6anhmaWl5Z2dzd2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NDU5NzgsImV4cCI6MjA3ODAyMTk3OH0.Gv1wjTo2XqKQbkaq1bgxe5RtZk_v8LUwF3BKnLNTD5I";
@@ -845,65 +847,68 @@ async function importSignageFromExcel(){
         selectedImage = null;
     }
 
-    document.getElementById('fileInput').onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file)
-            return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectedImage = e.target.result;
-            document.getElementById('preview').src = selectedImage;
-            document.getElementById('preview').style.display = 'block';
-            document.getElementById('submitBtn').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    };
+    document.getElementById('fileInput').onchange = function (e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
 
-   async function submitUpload(){
-  if(!selectedSignage || !selectedImage) return;
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = 'Uploading...';
+  selectedFile = file; // ✅ store actual file
+
+  // show preview
+  selectedImage = URL.createObjectURL(file);
+  const img = document.getElementById('preview');
+  img.src = selectedImage;
+  img.style.display = "block";
+
+  document.getElementById('submitBtn').style.display = "block";
+};
+
+
+  async function submitUpload(){
+  if(!selectedSignage || !selectedFile){
+    alert("No image selected.");
+    return;
+  }
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Uploading...";
 
   try {
-    // Convert dataURL to Blob
-    const res = await fetch(selectedImage);
-    const blob = await res.blob();
+    const ext = selectedFile.name.split('.').pop().toLowerCase();
+    const safeCode = selectedSignage.code.replace(/[^A-Za-z0-9-_]/g, "_");
+    const filename = `${safeCode}/${Date.now()}.${ext}`;
 
-    const filename = `${selectedSignage.code}-${Date.now()}.jpg`;
-
-    // Upload to Supabase Storage
+    // ✅ Upload original file directly to Supabase
     const { data, error: uploadError } = await sb.storage
-      .from('uploads')
-      .upload(filename, blob, { contentType: 'image/jpeg' });
+      .from("uploads")
+      .upload(filename, selectedFile, {
+        contentType: selectedFile.type || "image/jpeg",
+      });
 
     if (uploadError) throw uploadError;
 
-    // Get Public CDN URL
-    const { data: publicUrl } = sb.storage.from('uploads').getPublicUrl(filename);
+    const { data: publicData } = sb.storage.from("uploads").getPublicUrl(filename);
 
-    // Save record in DB
-    const { error: dbError } = await sb
-      .from('uploads')
-      .insert({
-        code: selectedSignage.code,
-        image_url: publicUrl.publicUrl,
-        status: 'pending'
-      });
+    // ✅ Add DB entry
+    const { error: dbError } = await sb.from("uploads").insert({
+      code: selectedSignage.code,
+      image_url: publicData.publicUrl,
+      status: "pending",
+    });
 
     if (dbError) throw dbError;
 
-    alert("✅ Image uploaded successfully!");
+    alert("✅ Photo uploaded!");
     backToList();
-    loadData(); // refresh dashboard
-  }
-  catch(err){
+    await loadData();
+  } catch (err) {
     alert("❌ Error uploading image: " + err.message);
-  }
-  finally {
+  } finally {
     btn.disabled = false;
     btn.textContent = "Submit Photo";
   }
 }
+
     async function addSignage() {
         const code = document.getElementById('newCode').value.trim();
         const width = document.getElementById('newWidth').value;
