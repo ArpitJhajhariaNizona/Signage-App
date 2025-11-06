@@ -1167,13 +1167,13 @@ const thumbUrl = convertDriveUrl(url);
   <a href="${url}" target="_blank" class="drive-link">📂 Open in Drive</a>
   ${currentRole==='supervisor'&&u.status==='pending'?`
   <div class="action-btns">
-    <button class="approve-btn" onclick="updateStatus('${u.code}','approved','${i}')">✓ Approve</button>
-    <button class="reject-btn" onclick="toggleRejectInput(${i})">✗ Reject</button>
+    <button class="approve-btn" id="approveBtn${i}" onclick="handleApprove('${u.code}', ${i})">✓ Approve</button>
+<button class="reject-btn" onclick="toggleRejectInput(${i})">✗ Reject</button>
   </div>
   <input type="text" id="comment${i}" class="comment-input" placeholder="Rejection reason...">
-  <button id="rejectConfirm${i}" style="display:none;background:#f44336;margin-top:8px" onclick="updateStatus('${u.code}','rejected','${i}')">Confirm Reject</button>
+  <button id="rejectConfirm${i}" style="display:none;background:#f44336;margin-top:8px" onclick="handleReject('${u.code}', ${i})">Confirm Reject</button>
   `:''}
-  ${u.reviewComment?`<div style="margin-top:8px;font-size:12px;color:#721C24;background:#F8D7DA;padding:8px;border-radius:4px">💬 ${u.reviewComment}</div>`:''}
+  ${(u.review_comment || u.reviewComment)?`<div style="margin-top:8px;font-size:12px;color:#721C24;background:#F8D7DA;padding:8px;border-radius:4px">💬 ${u.review_comment || u.reviewComment}</div>`:''}
 </div>`;
     fragment.appendChild(div);
   });
@@ -1201,35 +1201,43 @@ bindScrollOnce();
         input.focus();
     }
 
-    async function updateStatus(code, status, idx) {
-        let comment = '';
-        if (status === 'rejected') {
-            comment = document.getElementById('comment' + idx).value.trim();
-            if (!comment) {
-                alert('Please enter rejection reason');
-                return;
-            }
-        }
-        try {
-            await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'updateStatus',
-                    code,
-                    status,
-                    comment,
-                    reviewedBy: 'Supervisor'
-                })
-            });
-            alert('✅ Status updated!');
-loadData();        } catch (err) {
-            alert('Error updating status');
+    async function updateStatus(code, status, idx) {async function updateStatus(code, status, idx) {
+    let comment = '';
+    if (status === 'rejected') {
+        comment = document.getElementById('comment' + idx).value.trim();
+        if (!comment) {
+            alert('Please enter rejection reason');
+            return;
         }
     }
+    
+    try {
+        // Update in Supabase
+        const updateData = {
+            status: status,
+            reviewed_by: 'Supervisor',
+            review_date: new Date().toISOString()
+        };
+        
+        if (comment) {
+            updateData.review_comment = comment;
+        }
+        
+        const { error } = await sb.from('uploads')
+            .update(updateData)
+            .eq('code', code)
+            .eq('status', 'pending'); // Only update if currently pending
+        
+        if (error) throw error;
+        
+        alert('✅ Status updated to ' + status + '!');
+        await loadData(); // Reload all data
+        
+    } catch (err) {
+        console.error('Update error:', err);
+        alert('❌ Error updating status: ' + err.message);
+    }
+}
 
     function openModal(src) {
         window.open(src, '_blank');
