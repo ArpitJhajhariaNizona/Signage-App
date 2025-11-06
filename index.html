@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signage Management</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://drive.google.com">
 <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
@@ -497,6 +499,20 @@
                 <button onclick="addSignage()">Add Signage</button>
                 <div id="supervisorMessage"></div>
             </div>
+            <!-- Bulk Import from Excel -->
+<div class="container" style="margin-top:12px">
+  <h2>Bulk Import Signage (Excel)</h2>
+  <div class="filters" style="margin-bottom:12px">
+    <p style="font-size:14px;color:#555;margin-bottom:8px">
+      Required columns (exact names): <b>Station, Code, Type, Width, Height, Illumination, Mounting, Sides</b><br>
+      File types: .xlsx, .xls, .csv
+    </p>
+    <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" />
+    <button style="margin-top:8px" onclick="importSignageFromExcel()">Upload &amp; Import</button>
+  </div>
+  <div id="excelImportStatus" class="api-status">Waiting for file…</div>
+</div>
+
         </div>
     </div>
 
@@ -566,6 +582,133 @@ const result=match?`https://drive.google.com/thumbnail?id=${match[1]}&sz=w256`:u
         urlCache.set(url, result);
         return result;
     }
+        // -------- Excel Importer for Supervisor --------
+
+// Map & normalize headers to our expected keys
+function normalizeHeader(h) {
+  if (!h) return '';
+  return String(h).trim().toLowerCase()
+    .replace(/\s+/g,' ')        // collapse spaces
+    .replace(/[^a-z0-9 ]/g,'')  // drop symbols
+    .trim();
+}
+
+// Convert Illumination, Sides etc. to standard values
+function yn(val) {
+  const s = String(val || '').trim().toLowerCase();
+  if (['y','yes','true','1'].includes(s)) return 'Yes';
+  if (['n','no','false','0'].includes(s)) return 'No';
+  return val ? String(val) : ''; // leave as is if custom
+}
+function toNumber(v) {
+  const n = parseFloat(v);
+  return isFinite(n) ? n : null;
+}
+
+// Validate a row has the essentials
+function validateRow(r) {
+  // Code is required (primary key)
+  if (!r.code) return 'Missing Code';
+  if (r.width!==null && r.width<0) return 'Width must be >= 0';
+  if (r.height!==null && r.height<0) return 'Height must be >= 0';
+  return null;
+}
+
+async function importSignageFromExcel(){
+  const status = document.getElementById('excelImportStatus');
+  const input = document.getElementById('excelInput');
+  const file = input.files && input.files[0];
+  if (!file) { status.textContent = '❌ No file selected.'; return; }
+
+  status.textContent = '🔄 Reading file…';
+
+  try {
+    // Read file
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+
+    // Use first sheet
+    const wsName = wb.SheetNames[0];
+    const ws = wb.Sheets[wsName];
+
+    // Convert to JSON (raw keys)
+    const rowsRaw = XLSX.utils.sheet_to_json(ws, { defval: '' }); // keep empty cells as ''
+    if (!rowsRaw.length) { status.textContent = '❌ No rows found.'; return; }
+
+    // Build header map: original -> normalized
+    const headerMap = {};
+    Object.keys(rowsRaw[0]).forEach(k => headerMap[k] = normalizeHeader(k));
+
+    // Reverse lookup to find required headers exist
+    const needed = ['station','code','type','width','height','illumination','mounting','sides'];
+    const available = new Set(Object.values(headerMap));
+    const missing = needed.filter(k => !available.has(k));
+    if (missing.length) {
+      status.innerHTML = '❌ Missing columns: <b>'+missing.join(', ')+'</b>';
+      return;
+    }
+
+    // Transform rows
+    const toKey = (origKey) => headerMap[origKey];
+    const prepared = rowsRaw.map(row => {
+      const normalized = {};
+      for (const orig in row) {
+        const key = toKey(orig);
+        if (!key) continue;
+        normalized[key] = row[orig];
+      }
+      // Coerce types & normalize
+      return {
+        station: String(normalized.station || '').trim(),
+        code: String(normalized.code || '').trim(),
+        type: String(normalized.type || '').trim(),
+        width: toNumber(normalized.width),
+        height: toNumber(normalized.height),
+        illumination: yn(normalized.illumination) || String(normalized.illumination || '').trim(),
+        mounting: String(normalized.mounting || '').trim(),
+        sides: String(normalized.sides || '').trim(), // expect 'Single'/'Double' or similar
+        status: 'pending'
+      };
+    });
+
+    // Basic validation & dedupe
+    const errors = [];
+    const seen = new Set();
+    const deduped = [];
+    for (const r of prepared) {
+      const err = validateRow(r);
+      if (err) { errors.push(`Code ${r.code || '(blank)'}: ${err}`); continue; }
+      if (seen.has(r.code)) continue; // keep first occurrence
+      seen.add(r.code);
+      deduped.push(r);
+    }
+    if (errors.length) {
+      status.innerHTML = '⚠️ Some rows skipped:<br>'+errors.slice(0,10).map(e=>'- '+e).join('<br>') + (errors.length>10?'<br>…':'' );
+    } else {
+      status.textContent = '✅ Data validated. Importing…';
+    }
+
+    // Upsert in chunks to avoid payload limits
+    const CHUNK = 200;
+    let imported = 0;
+    for (let i=0; i<deduped.length; i+=CHUNK) {
+      const slice = deduped.slice(i, i+CHUNK);
+      // Requires Supabase client 'sb' already initialized
+      const { error } = await sb.from('signage')
+        .upsert(slice, { onConflict: 'code' }); // update if exists, insert if new
+      if (error) throw error;
+      imported += slice.length;
+      status.textContent = `✅ Imported ${imported}/${deduped.length}…`;
+    }
+
+    status.textContent = `✅ Done. Imported ${imported} rows. Refreshing list…`;
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    status.textContent = '❌ Import failed: ' + err.message;
+  }
+}
+
    async function loadData(){
   const statusEl = document.getElementById('apiStatus');
 
@@ -643,11 +786,12 @@ const result=match?`https://drive.google.com/thumbnail?id=${match[1]}&sz=w256`:u
 <div class="signage-card" onclick="selectSignage('${s.code}')">
 <div class="signage-code">${s.code}</div>
 <div class="signage-specs">
-<div>📏 ${
-
-        s.width}m × ${s.height}m</div>
-<div>💡 ${s.illumination === 'Yes' ? 'Illuminated' : 'Standard'}</div>
+  <div>📍 ${s.station || '-'}</div>
+  <div>🧰 ${s.type || '-'}</div>
+  <div>📏 ${s.width}m × ${s.height}m</div>
+  <div>💡 ${s.illumination==='Yes'?'Illuminated':'Standard'}</div>
 </div>
+
 <span class="signage-status ${
 
         s.status.toLowerCase()}">${s.status}</span>
