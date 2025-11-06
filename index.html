@@ -1161,7 +1161,7 @@ const thumbUrl = convertDriveUrl(url);
     div.innerHTML=`<img data-src="${thumbUrl}" loading="lazy" decoding="async" fetchpriority="low" onclick="window.open('${url}','_blank')">
 <div class="gallery-item-info">
   <div class="gallery-item-code">${u.code}</div>
-  <div class="gallery-item-specs">📏 ${signage.width||'?'}m × ${signage.height||'?'}m | 💡 ${signage.illumination||'?'}</div>
+  <div class="gallery-item-specs">📐 ${signage.width||'?'}m × ${signage.height||'?'}m | 💡 ${signage.illumination||'?'}</div>
   <div class="gallery-item-specs">📅 ${new Date(u.upload_date || u.uploadDate).toLocaleDateString()}</div>
   <span class="status ${u.status}">${u.status.toUpperCase()}</span>
   <a href="${url}" target="_blank" class="drive-link">📂 Open in Drive</a>
