@@ -476,25 +476,29 @@
         <div id="workerView">
             <div id="workerStep1" class="step active">
                 <h2>Select Signage</h2>
-                <div class="filters">
-                    <select id="filterWidth" onchange="applyFilters()">
-                        <option value="">All Widths</option>
-                        <option value="small">&lt; 2m</option>
-                        <option value="medium">2m - 4m</option>
-                        <option value="large">&gt; 4m</option>
-                    </select>
-                    <select id="filterHeight" onchange="applyFilters()">
-                        <option value="">All Heights</option>
-                        <option value="small">&lt; 1m</option>
-                        <option value="medium">1m - 2m</option>
-                        <option value="large">&gt; 2m</option>
-                    </select>
-                    <select id="filterIllumination" onchange="applyFilters()">
-                        <option value="">All Types</option>
-                        <option value="Yes">Illuminated</option>
-                        <option value="No">Non-Illuminated</option>
-                    </select>
-                </div>
+               <div class="filters">
+    <select id="filterStation" onchange="applyFilters()">
+        <option value="">All Stations</option>
+    </select>
+    <select id="filterType" onchange="applyFilters()">
+        <option value="">All Types</option>
+    </select>
+    <select id="filterWidth" onchange="applyFilters()">
+        <option value="">All Widths</option>
+    </select>
+    <select id="filterHeight" onchange="applyFilters()">
+        <option value="">All Heights</option>
+    </select>
+    <select id="filterIllumination" onchange="applyFilters()">
+        <option value="">All Illumination</option>
+    </select>
+    <select id="filterMounting" onchange="applyFilters()">
+        <option value="">All Mounting</option>
+    </select>
+    <select id="filterSides" onchange="applyFilters()">
+        <option value="">All Sides</option>
+    </select>
+</div>
                 <div id="signageList">
     <table id="signageTable" style="width:100%; border-collapse:collapse; background:#fff">
         <thead>
@@ -776,7 +780,8 @@ async function importSignageFromExcel(){
     signageByCode = Object.fromEntries(allSignage.map(s => [s.code, s]));
     allUploads = uploadsRes.data || [];
 
-    applyFilters();
+    populateFilters();
+applyFilters();
     resetPagination();
     loadGallery();
 
@@ -798,35 +803,78 @@ async function importSignageFromExcel(){
         else
             loadGallery();
     }
-
-    let filterTimeout;
-    function applyFilters() {
-        clearTimeout(filterTimeout);
-        filterTimeout = setTimeout(() => {
-            const width = document.getElementById('filterWidth').value;
-            const height = document.getElementById('filterHeight').value;
-            const illum = document.getElementById('filterIllumination').value;
-            let filtered = allSignage.filter(s => {
-                let match = true;
-                if (width === 'small' && parseFloat(s.width) >= 2)
-                    match = false;
-                if (width === 'medium' && (parseFloat(s.width) < 2 || parseFloat(s.width) > 4))
-                    match = false;
-                if (width === 'large' && parseFloat(s.width) <= 4)
-                    match = false;
-                if (height === 'small' && parseFloat(s.height) >= 1)
-                    match = false;
-                if (height === 'medium' && (parseFloat(s.height) < 1 || parseFloat(s.height) > 2))
-                    match = false;
-                if (height === 'large' && parseFloat(s.height) <= 2)
-                    match = false;
-                if (illum && s.illumination !== illum)
-                    match = false;
-                return match;
-            });
-            displaySignageList(filtered);
-        }, 150);
-    }
+    function populateFilters() {
+    // Get unique values for each filter
+    const stations = [...new Set(allSignage.map(s => s.station).filter(Boolean))].sort();
+    const types = [...new Set(allSignage.map(s => s.type).filter(Boolean))].sort();
+    const widths = [...new Set(allSignage.map(s => s.width).filter(Boolean))].sort((a,b) => parseFloat(a) - parseFloat(b));
+    const heights = [...new Set(allSignage.map(s => s.height).filter(Boolean))].sort((a,b) => parseFloat(a) - parseFloat(b));
+    const illuminations = [...new Set(allSignage.map(s => s.illumination).filter(Boolean))].sort();
+    const mountings = [...new Set(allSignage.map(s => s.mounting).filter(Boolean))].sort();
+    const sides = [...new Set(allSignage.map(s => s.sides).filter(Boolean))].sort();
+    
+    // Populate Station
+    const stationSelect = document.getElementById('filterStation');
+    stationSelect.innerHTML = '<option value="">All Stations</option>' + 
+        stations.map(v => `<option value="${v}">${v}</option>`).join('');
+    
+    // Populate Type
+    const typeSelect = document.getElementById('filterType');
+    typeSelect.innerHTML = '<option value="">All Types</option>' + 
+        types.map(v => `<option value="${v}">${v}</option>`).join('');
+    
+    // Populate Width
+    const widthSelect = document.getElementById('filterWidth');
+    widthSelect.innerHTML = '<option value="">All Widths</option>' + 
+        widths.map(v => `<option value="${v}">${v}m</option>`).join('');
+    
+    // Populate Height
+    const heightSelect = document.getElementById('filterHeight');
+    heightSelect.innerHTML = '<option value="">All Heights</option>' + 
+        heights.map(v => `<option value="${v}">${v}m</option>`).join('');
+    
+    // Populate Illumination
+    const illumSelect = document.getElementById('filterIllumination');
+    illumSelect.innerHTML = '<option value="">All Illumination</option>' + 
+        illuminations.map(v => `<option value="${v}">${v}</option>`).join('');
+    
+    // Populate Mounting
+    const mountingSelect = document.getElementById('filterMounting');
+    mountingSelect.innerHTML = '<option value="">All Mounting</option>' + 
+        mountings.map(v => `<option value="${v}">${v}</option>`).join('');
+    
+    // Populate Sides
+    const sidesSelect = document.getElementById('filterSides');
+    sidesSelect.innerHTML = '<option value="">All Sides</option>' + 
+        sides.map(v => `<option value="${v}">${v}</option>`).join('');
+}
+        let filterTimeout;
+function applyFilters() {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+        const station = document.getElementById('filterStation').value;
+        const type = document.getElementById('filterType').value;
+        const width = document.getElementById('filterWidth').value;
+        const height = document.getElementById('filterHeight').value;
+        const illum = document.getElementById('filterIllumination').value;
+        const mounting = document.getElementById('filterMounting').value;
+        const sides = document.getElementById('filterSides').value;
+        
+        let filtered = allSignage.filter(s => {
+            let match = true;
+            if (station && s.station !== station) match = false;
+            if (type && s.type !== type) match = false;
+            if (width && s.width != width) match = false;
+            if (height && s.height != height) match = false;
+            if (illum && s.illumination !== illum) match = false;
+            if (mounting && s.mounting !== mounting) match = false;
+            if (sides && s.sides !== sides) match = false;
+            return match;
+        });
+        
+        displaySignageList(filtered);
+    }, 150);
+}
 
 let sortColumn = 'code';
 let sortDirection = 'asc';
@@ -1129,6 +1177,7 @@ loadData();        } catch (err) {
         window.sortTable = sortTable;
     window.setRole = setRole;
     window.setView = setView;
+        window.populateFilters = populateFilters;
     window.applyFilters = applyFilters;
     window.submitUpload = submitUpload;
     window.addSignage = addSignage;
